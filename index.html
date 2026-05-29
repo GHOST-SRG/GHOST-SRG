@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GOD MODE">
+<link rel="manifest" href="#" id="manifest-placeholder">
+<title>GOD MODE — Trading Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --bg2: #0e0e1a;
+    --bg3: #13131f;
+    --surface: #16162a;
+    --surface2: #1e1e35;
+    --border: #2a2a45;
+    --border2: #353560;
+    --gold: #f0c040;
+    --gold2: #d4a820;
+    --gold-dim: rgba(240,192,64,0.12);
+    --gold-glow: rgba(240,192,64,0.25);
+    --green: #2ecc8a;
+    --green-dim: rgba(46,204,138,0.12);
+    --red: #e05555;
+    --red-dim: rgba(224,85,85,0.12);
+    --blue: #5b8dee;
+    --blue-dim: rgba(91,141,238,0.1);
+    --text: #e8e8f0;
+    --text2: #9090b0;
+    --text3: #5a5a80;
+    --radius: 14px;
+    --radius2: 10px;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:9999; opacity:.4;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    position: sticky; top:0; z-index: 100;
+    background: rgba(8,8,16,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .logo {
+    font-family: var(--font-display);
+    font-size: 18px; font-weight: 800;
+    letter-spacing: 0.12em;
+    background: linear-gradient(135deg, var(--gold), #fff8e0);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .logo span { color: var(--text3); -webkit-text-fill-color: var(--text3); font-weight:400; font-size:11px; display:block; letter-spacing:0.2em; margin-top:-2px; }
+  .header-balance {
+    text-align: right;
+  }
+  .header-balance .bal-label { font-size:9px; color:var(--text3); letter-spacing:0.15em; text-transform:uppercase; }
+  .header-balance .bal-value { font-size:16px; font-weight:700; color:var(--gold); font-family:var(--font-display); }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed; bottom:0; left:0; right:0; z-index:100;
+    background: rgba(8,8,16,0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex; height: 64px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px; cursor:pointer; background:none; border:none;
+    color: var(--text3); transition: color 0.2s;
+    font-family: var(--font-mono); font-size:9px; letter-spacing:0.1em;
+  }
+  .nav-btn svg { width:20px; height:20px; }
+  .nav-btn.active { color: var(--gold); }
+  .nav-btn.active svg { filter: drop-shadow(0 0 6px var(--gold)); }
+
+  /* ── PAGES ── */
+  .page { display:none; padding: 20px 16px 90px; max-width:480px; margin:0 auto; }
+  .page.active { display:block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content:''; position:absolute; inset:0; border-radius:var(--radius);
+    background: linear-gradient(135deg, rgba(240,192,64,0.03) 0%, transparent 60%);
+    pointer-events:none;
+  }
+  .card-title {
+    font-family: var(--font-display); font-size:11px; font-weight:600;
+    letter-spacing:0.18em; text-transform:uppercase; color:var(--text3);
+    margin-bottom:14px; display:flex; align-items:center; gap:8px;
+  }
+  .card-title .dot { width:5px; height:5px; border-radius:50%; background:var(--gold); box-shadow:0 0 6px var(--gold); }
+
+  /* ── INPUTS ── */
+  .input-group { margin-bottom:12px; }
+  .input-label { font-size:10px; color:var(--text3); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:6px; display:block; }
+  .inp {
+    width:100%; background:var(--bg2); border:1px solid var(--border);
+    border-radius:var(--radius2); padding:12px 14px; color:var(--text);
+    font-family:var(--font-mono); font-size:14px; outline:none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance:none;
+  }
+  .inp:focus { border-color:var(--gold2); box-shadow:0 0 0 3px var(--gold-dim); }
+  .inp::placeholder { color:var(--text3); }
+  select.inp { cursor:pointer; }
+  select.inp option { background:var(--bg2); }
+
+  /* ── TOGGLE BUTTONS ── */
+  .toggle-group { display:flex; gap:8px; }
+  .toggle-btn {
+    flex:1; padding:10px; border-radius:var(--radius2);
+    border:1px solid var(--border); background:var(--bg2);
+    color:var(--text2); font-family:var(--font-mono); font-size:12px;
+    cursor:pointer; transition:all 0.2s; font-weight:700; letter-spacing:0.05em;
+  }
+  .toggle-btn.buy.active { background:var(--green-dim); border-color:var(--green); color:var(--green); box-shadow:0 0 12px rgba(46,204,138,0.2); }
+  .toggle-btn.sell.active { background:var(--red-dim); border-color:var(--red); color:var(--red); box-shadow:0 0 12px rgba(224,85,85,0.2); }
+
+  /* ── LOT RESULT ── */
+  .lot-result {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    padding: 16px;
+    text-align:center; margin-top:4px;
+  }
+  .lot-result .lot-label { font-size:9px; color:var(--text3); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:6px; }
+  .lot-result .lot-value {
+    font-family:var(--font-display); font-size:36px; font-weight:800;
+    background: linear-gradient(135deg, var(--gold), #fff8c0);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    line-height:1;
+  }
+  .lot-result .lot-risk { font-size:11px; color:var(--text2); margin-top:6px; }
+  .lot-result .lot-risk span { color:var(--gold); }
+
+  /* ── RISK SLIDER ── */
+  .risk-row { display:flex; align-items:center; gap:12px; }
+  .risk-slider-wrap { flex:1; }
+  input[type=range] {
+    -webkit-appearance:none; width:100%; height:4px;
+    background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--val,50%), var(--border2) var(--val,50%), var(--border2) 100%);
+    border-radius:2px; outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--gold); box-shadow:0 0 8px var(--gold-glow); cursor:pointer;
+  }
+  .risk-val {
+    font-family:var(--font-display); font-size:20px; font-weight:800;
+    color:var(--gold); min-width:44px; text-align:right;
+  }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius2); padding:14px 12px;
+    position:relative; overflow:hidden;
+  }
+  .stat-card .s-label { font-size:9px; color:var(--text3); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:6px; }
+  .stat-card .s-value { font-family:var(--font-display); font-size:22px; font-weight:800; color:var(--text); }
+  .stat-card .s-value.green { color:var(--green); }
+  .stat-card .s-value.red { color:var(--red); }
+  .stat-card .s-value.gold { color:var(--gold); }
+  .stat-card .s-sub { font-size:10px; color:var(--text3); margin-top:3px; }
+
+  /* ── TRADE LIST ── */
+  .trade-item {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius2); padding:14px 16px;
+    margin-bottom:8px; display:flex; align-items:center; gap:12px;
+    cursor:pointer; transition:border-color 0.2s, transform 0.15s;
+    position:relative;
+  }
+  .trade-item:active { transform:scale(0.99); }
+  .trade-item:hover { border-color:var(--border2); }
+  .trade-badge {
+    width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:10px; font-weight:800; letter-spacing:0.05em; flex-shrink:0;
+  }
+  .trade-badge.buy { background:var(--green-dim); color:var(--green); border:1px solid rgba(46,204,138,0.3); }
+  .trade-badge.sell { background:var(--red-dim); color:var(--red); border:1px solid rgba(224,85,85,0.3); }
+  .trade-info { flex:1; min-width:0; }
+  .trade-strategy { font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .trade-meta { font-size:10px; color:var(--text3); margin-top:2px; }
+  .trade-pnl { font-family:var(--font-display); font-size:16px; font-weight:800; white-space:nowrap; }
+  .trade-pnl.profit { color:var(--green); }
+  .trade-pnl.loss { color:var(--red); }
+  .trade-delete { background:none; border:none; color:var(--text3); cursor:pointer; padding:4px; font-size:16px; }
+  .trade-delete:hover { color:var(--red); }
+
+  /* ── WARNING BANNER ── */
+  .warning-banner {
+    background: linear-gradient(135deg, rgba(224,85,85,0.15), rgba(224,85,85,0.08));
+    border: 1px solid rgba(224,85,85,0.4);
+    border-radius:var(--radius); padding:16px 18px;
+    margin-bottom:14px; display:none;
+    animation: pulse-red 2s infinite;
+  }
+  .warning-banner.show { display:block; }
+  @keyframes pulse-red {
+    0%,100% { box-shadow:0 0 0 0 rgba(224,85,85,0); }
+    50% { box-shadow:0 0 20px rgba(224,85,85,0.3); }
+  }
+  .warning-title { font-family:var(--font-display); font-size:14px; font-weight:800; color:var(--red); margin-bottom:4px; }
+  .warning-text { font-size:11px; color:rgba(224,85,85,0.8); line-height:1.6; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    width:100%; padding:14px; border-radius:var(--radius2);
+    border:none; cursor:pointer; font-family:var(--font-display);
+    font-size:14px; font-weight:700; letter-spacing:0.08em;
+    transition:all 0.2s; text-transform:uppercase;
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: #080810; box-shadow: 0 4px 20px var(--gold-glow);
+  }
+  .btn-gold:active { transform:scale(0.98); box-shadow:0 2px 10px var(--gold-glow); }
+  .btn-ghost {
+    background:transparent; color:var(--text2); border:1px solid var(--border2);
+  }
+  .btn-ghost:active { background:var(--surface2); }
+  .btn-sm {
+    padding:8px 14px; font-size:11px; width:auto;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family:var(--font-display); font-size:22px; font-weight:800;
+    color:var(--text); margin-bottom:20px; letter-spacing:0.02em;
+  }
+  .section-title span { color:var(--gold); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar { height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin-top:8px; }
+  .progress-fill { height:100%; border-radius:2px; transition:width 0.6s ease; }
+
+  /* ── CHART ── */
+  .mini-chart { height:80px; position:relative; overflow:hidden; }
+  .chart-svg { width:100%; height:100%; }
+
+  /* ── AI ADVICE ── */
+  .ai-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--gold-dim); border:1px solid rgba(240,192,64,0.3);
+    border-radius:20px; padding:3px 10px; font-size:9px; color:var(--gold);
+    letter-spacing:0.12em; text-transform:uppercase; font-weight:700; margin-bottom:10px;
+  }
+  .ai-badge::before { content:'✦'; font-size:8px; }
+  .ai-text { font-size:12px; color:var(--text2); line-height:1.7; }
+  .ai-text strong { color:var(--text); }
+
+  /* ── FORECAST ── */
+  .forecast-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0; border-bottom:1px solid var(--border);
+  }
+  .forecast-row:last-child { border-bottom:none; }
+  .forecast-period { font-size:11px; color:var(--text3); letter-spacing:0.08em; }
+  .forecast-val { font-family:var(--font-display); font-size:16px; font-weight:700; }
+  .forecast-pct { font-size:10px; color:var(--text3); }
+
+  /* ── TIME HEATMAP ── */
+  .heatmap-grid {
+    display:grid; grid-template-columns: repeat(8,1fr); gap:4px; margin-top:8px;
+  }
+  .heat-cell {
+    aspect-ratio:1; border-radius:4px; background:var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-size:8px; color:var(--text3); cursor:default;
+    transition: transform 0.15s;
+  }
+  .heat-cell:hover { transform:scale(1.2); z-index:1; }
+
+  /* ── TOAST ── */
+  .toast {
+    position:fixed; top:70px; left:50%; transform:translateX(-50%) translateY(-20px);
+    background:var(--surface2); border:1px solid var(--border2);
+    border-radius:var(--radius2); padding:10px 18px; font-size:12px;
+    color:var(--text); z-index:200; opacity:0; pointer-events:none;
+    transition:all 0.3s; white-space:nowrap;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(8,8,16,0.85);
+    backdrop-filter:blur(8px); z-index:150; align-items:flex-end; justify-content:center;
+  }
+  .modal-overlay.show { display:flex; }
+  .modal {
+    background:var(--bg3); border:1px solid var(--border2);
+    border-radius:var(--radius) var(--radius) 0 0;
+    padding:24px 20px 40px; width:100%; max-width:480px;
+    animation:slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  .modal-title { font-family:var(--font-display); font-size:18px; font-weight:800; margin-bottom:20px; }
+
+  /* ── STREAK ── */
+  .streak-row { display:flex; gap:6px; margin-top:8px; }
+  .streak-dot {
+    width:28px; height:28px; border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700;
+  }
+  .streak-dot.win { background:var(--green-dim); color:var(--green); border:1px solid rgba(46,204,138,0.3); }
+  .streak-dot.loss { background:var(--red-dim); color:var(--red); border:1px solid rgba(224,85,85,0.3); }
+  .streak-dot.empty { background:var(--border); color:var(--text3); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+  /* ── DIVIDER ── */
+  .divider { height:1px; background:var(--border); margin:14px 0; }
+
+  /* ── SETTINGS ── */
+  .settings-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 0; border-bottom:1px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom:none; }
+  .settings-label { font-size:13px; color:var(--text2); }
+  .settings-sub { font-size:10px; color:var(--text3); margin-top:2px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align:center; padding:40px 20px; color:var(--text3); }
+  .empty-state .e-icon { font-size:36px; margin-bottom:12px; opacity:0.4; }
+  .empty-state .e-title { font-family:var(--font-display); font-size:16px; color:var(--text2); margin-bottom:6px; }
+  .empty-state .e-sub { font-size:11px; line-height:1.7; }
+
+  .glow-line {
+    height:1px; background:linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity:0.4; margin:16px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">GOD MODE<span>XAUUSD JOURNAL</span></div>
+  <div class="header-balance">
+    <div class="bal-label">Balance</div>
+    <div class="bal-value" id="headerBalance">$0.00</div>
+  </div>
+</header>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- WARNING BANNER (always rendered, toggled) -->
+<div style="padding:10px 16px 0; max-width:480px; margin:0 auto;">
+  <div class="warning-banner" id="warningBanner">
+    <div class="warning-title">⚠ STOP — 3 KETMA-KET ZARAR!</div>
+    <div class="warning-text">Siz ketma-ket 3 ta zarar ko'rdingiz. <strong>Bugun savdo to'xtatish tavsiya etiladi.</strong> Psixologiya tiklaning, ertaga yangi boshdan boshlang.</div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE: CALCULATOR ══════════ -->
+<div class="page active" id="page-calc">
+  <div class="section-title">Lot <span>Kalkulyator</span></div>
+
+  <!-- Balance card -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Balans & Risk</div>
+    <div class="input-group">
+      <label class="input-label">Balans ($)</label>
+      <input class="inp" id="balance" type="number" placeholder="Masalan: 500" inputmode="decimal" oninput="saveBalance(); calcLot();">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Risk darajasi</label>
+      <div class="risk-row">
+        <div class="risk-slider-wrap">
+          <input type="range" id="riskSlider" min="1" max="10" value="6" oninput="updateRisk(); calcLot();">
+        </div>
+        <div class="risk-val" id="riskVal">6%</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:9px;color:var(--text3)">Xavfsiz 1%</span>
+        <span style="font-size:9px;color:var(--gold)">Optimal 5–8%</span>
+        <span style="font-size:9px;color:var(--red)">Xavfli 10%</span>
+      </div>
+    </div>
+    <div class="input-group" style="margin-bottom:0">
+      <label class="input-label">Stop Loss (Pips)</label>
+      <input class="inp" id="slPips" type="number" placeholder="Masalan: 30" inputmode="decimal" oninput="calcLot();">
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="lot-result" id="lotResult">
+    <div class="lot-label">Tavsiya etilgan lot</div>
+    <div class="lot-value" id="lotValue">—</div>
+    <div class="lot-risk" id="lotRiskInfo">Balans va SL kiriting</div>
+    <div class="progress-bar" style="margin-top:10px;">
+      <div class="progress-fill" id="riskProgress" style="width:0%;background:var(--gold);"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius2); padding:12px 14px;">
+    <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Formula</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.8;">
+      Risk $ = Balans × Risk % <br>
+      <span style="color:var(--gold)">Lot = Risk$ ÷ (SL pips × $1) × 0.1</span><br>
+      <span style="font-size:10px;color:var(--text3)">*XAUUSD: 10 pips = $1 (0.01 lot uchun)</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE: NEW TRADE ══════════ -->
+<div class="page" id="page-trade">
+  <div class="section-title">Yangi <span>Tred</span></div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Yo'nalish</div>
+    <div class="toggle-group">
+      <button class="toggle-btn buy active" id="btnBuy" onclick="setDir('BUY')">▲ BUY</button>
+      <button class="toggle-btn sell" id="btnSell" onclick="setDir('SELL')">▼ SELL</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Tred Ma'lumotlari</div>
+    <div class="input-group">
+      <label class="input-label">Lot miqdori</label>
+      <input class="inp" id="tradeLot" type="number" placeholder="Masalan: 0.02" inputmode="decimal" step="0.01">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Natija ($)</label>
+      <div style="display:flex;gap:8px;">
+        <button class="toggle-btn buy" id="btnProfit" onclick="setResult('profit')" style="font-size:11px;">+ Foyda</button>
+        <button class="toggle-btn sell" id="btnLoss" onclick="setResult('loss')" style="font-size:11px;">− Zarar</button>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Miqdor ($)</label>
+      <input class="inp" id="tradePnL" type="number" placeholder="Masalan: 8.50" inputmode="decimal" step="0.01">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Strategiya</label>
+      <input class="inp" id="tradeStrategy" type="text" placeholder="Masalan: Trend follow, SMC, Breakout...">
+    </div>
+    <div class="input-group" style="margin-bottom:0">
+      <label class="input-label">Izoh (ixtiyoriy)</label>
+      <input class="inp" id="tradeNote" type="text" placeholder="Qo'shimcha eslatma...">
+    </div>
+  </div>
+
+  <button class="btn btn-gold" onclick="saveTrade()">✦ TREDNI SAQLASH</button>
+</div>
+
+<!-- ══════════ PAGE: JOURNAL ══════════ -->
+<div class="page" id="page-journal">
+  <div class="section-title">Tred <span>Jurnali</span></div>
+  <div id="tradeList"></div>
+</div>
+
+<!-- ══════════ PAGE: STATS ══════════ -->
+<div class="page" id="page-stats">
+  <div class="section-title"><span>Statistika</span></div>
+
+  <div class="stat-grid" id="statGrid">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Streak -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>So'nggi 10 ta tred</div>
+    <div class="streak-row" id="streakRow"></div>
+  </div>
+
+  <!-- Forecast -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Prognoz (joriy sur'atda)</div>
+    <div id="forecastBlock"></div>
+  </div>
+
+  <!-- Time heatmap -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Soatlar bo'yicha natija</div>
+    <div class="heatmap-grid" id="heatmapGrid"></div>
+    <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:5px;font-size:9px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:var(--green-dim);border:1px solid var(--green);"></div> Foydali</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:9px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:var(--red-dim);border:1px solid var(--red);"></div> Zararli</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:9px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:var(--border);"></div> Ma'lumot yo'q</div>
+    </div>
+  </div>
+
+  <!-- Strategy breakdown -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Strategiyalar bo'yicha</div>
+    <div id="strategyBlock"></div>
+  </div>
+
+  <!-- AI Advice -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Tahlil & Tavsiya</div>
+    <div class="ai-badge">AI Tavsiya</div>
+    <div class="ai-text" id="aiAdvice">Tredlar yozilgach tavsiya chiqadi...</div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE: SETTINGS ══════════ -->
+<div class="page" id="page-settings">
+  <div class="section-title"><span>Sozlamalar</span></div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Balans</div>
+    <div class="input-group">
+      <label class="input-label">Joriy Balans ($)</label>
+      <input class="inp" id="settingsBalance" type="number" placeholder="Balansni kiriting" inputmode="decimal" oninput="updateBalanceFromSettings()">
+    </div>
+    <button class="btn btn-ghost" onclick="resetBalance()" style="margin-top:4px;">Balansni Noldan Boshlash</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Risk Ogohlantirish</div>
+    <div class="settings-row">
+      <div><div class="settings-label">3 zarar ogohlantiruvi</div><div class="settings-sub">Ketma-ket 3 zarar bo'lsa to'xtatish</div></div>
+      <div style="color:var(--green);font-size:11px;">✓ Faol</div>
+    </div>
+    <div class="settings-row" style="border:none;">
+      <div><div class="settings-label">Versiya</div><div class="settings-sub">God Mode v1.0</div></div>
+      <div style="color:var(--text3);font-size:10px;">XAUUSD</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Ma'lumotlar</div>
+    <button class="btn btn-ghost" onclick="exportData()" style="margin-bottom:8px;">📤 Ma'lumotlarni Export qilish</button>
+    <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(224,85,85,0.3);" onclick="confirmReset()">🗑 Barcha Tredlarni O'chirish</button>
+  </div>
+
+  <div style="text-align:center;padding:20px;color:var(--text3);font-size:10px;letter-spacing:0.1em;">
+    GOD MODE — XAUUSD TRADING JOURNAL<br>
+    <span style="color:var(--text3);font-size:9px;">Saytni telefonga saqlash: Share → Add to Home Screen</span>
+  </div>
+</div>
+
+<!-- ══════════ BOTTOM NAV ══════════ -->
+<nav class="nav">
+  <button class="nav-btn active" id="nav-calc" onclick="showPage('calc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2"/>
+    </svg>
+    KALK
+  </button>
+  <button class="nav-btn" id="nav-trade" onclick="showPage('trade')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M12 5v14M5 12l7-7 7 7"/>
+    </svg>
+    TRED
+  </button>
+  <button class="nav-btn" id="nav-journal" onclick="showPage('journal')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M4 6h16M4 10h16M4 14h10M4 18h7"/>
+    </svg>
+    JURNAL
+  </button>
+  <button class="nav-btn" id="nav-stats" onclick="showPage('stats')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M4 20V10M9 20V4M14 20v-8M19 20v-5"/>
+    </svg>
+    STAT
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="showPage('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+    </svg>
+    SOZLAMA
+  </button>
+</nav>
+
+<script>
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let state = {
+  balance: 0,
+  trades: [],
+  direction: 'BUY',
+  result: 'profit'
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('godmode_v1');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state.balance = parsed.balance || 0;
+      state.trades = parsed.trades || [];
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('godmode_v1', JSON.stringify({
+      balance: state.balance,
+      trades: state.trades
+    }));
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+loadState();
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Restore balance inputs
+  if (state.balance > 0) {
+    document.getElementById('balance').value = state.balance;
+    document.getElementById('settingsBalance').value = state.balance;
+  }
+  updateHeaderBalance();
+  updateRisk();
+  checkWarning();
+  renderJournal();
+  renderStats();
+});
+
+// ══════════════════════════════════════
+// NAV
+// ══════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'stats') renderStats();
+  if (name === 'journal') renderJournal();
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════
+// BALANCE
+// ══════════════════════════════════════
+function saveBalance() {
+  const v = parseFloat(document.getElementById('balance').value) || 0;
+  state.balance = v;
+  document.getElementById('settingsBalance').value = v || '';
+  updateHeaderBalance();
+  saveState();
+}
+
+function updateBalanceFromSettings() {
+  const v = parseFloat(document.getElementById('settingsBalance').value) || 0;
+  state.balance = v;
+  document.getElementById('balance').value = v || '';
+  updateHeaderBalance();
+  saveState();
+}
+
+function updateHeaderBalance() {
+  document.getElementById('headerBalance').textContent = '$' + state.balance.toFixed(2);
+}
+
+function resetBalance() {
+  if (confirm('Balansni nolga qaytarasizmi?')) {
+    state.balance = 0;
+    document.getElementById('balance').value = '';
+    document.getElementById('settingsBalance').value = '';
+    updateHeaderBalance();
+    saveState();
+    showToast('Balans nolga qaytarildi');
+  }
+}
+
+// ══════════════════════════════════════
+// RISK SLIDER
+// ══════════════════════════════════════
+function updateRisk() {
+  const v = document.getElementById('riskSlider').value;
+  document.getElementById('riskVal').textContent = v + '%';
+  const pct = ((v - 1) / 9 * 100);
+  document.getElementById('riskSlider').style.setProperty('--val', pct + '%');
+  calcLot();
+}
+
+// ══════════════════════════════════════
+// LOT CALCULATOR
+// ══════════════════════════════════════
+function calcLot() {
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const risk = parseFloat(document.getElementById('riskSlider').value) || 6;
+  const sl = parseFloat(document.getElementById('slPips').value) || 0;
+
+  if (!balance || !sl) {
+    document.getElementById('lotValue').textContent = '—';
+    document.getElementById('lotRiskInfo').innerHTML = 'Balans va SL kiriting';
+    document.getElementById('riskProgress').style.width = '0%';
+    return;
+  }
+
+  // XAUUSD: 1 pip = $0.01 per 0.01 lot = $1 per 0.1 lot = $10 per 1 lot
+  // So: 10 pips = $1 for 0.01 lot
+  // Risk$ = balance * risk% / 100
+  // Lot = Risk$ / (sl_pips / 10) rounded to 0.01
+  const riskDollar = balance * risk / 100;
+  const dollarPerPip = 0.1; // per 0.01 lot, per pip = $0.01; so per 0.01 lot for sl pips = sl/10
+  // More precisely: for 0.01 lot, 10 pips = $1, so 1 pip = $0.1 per 0.01 lot
+  // Loss for X lot, sl pips = X / 0.01 * sl * 0.01 = X * sl * 1
+  // Wait: 0.01 lot * 10 pips = $1 → 0.01 lot * sl pips = sl/10 $
+  // Lot = riskDollar / (sl/10) * 0.01 = riskDollar * 0.1 / sl
+  const rawLot = (riskDollar * 0.1) / sl;
+  const lot = Math.max(0.01, Math.round(rawLot / 0.01) * 0.01);
+
+  // Actual risk with rounded lot
+  const actualRisk = lot * (sl / 0.1) / 10;
+  // Actually: lot * sl * 10 (since 0.01 lot * 1 pip = $0.01, so lot/0.01 * $0.01 = lot * 1)
+  // Let me recalc: 0.01 lot, 10 pips = $1 → 0.01 lot, 1 pip = $0.1 → lot = X, 1 pip = X/0.01*0.1 = 10X
+  // sl pips loss for lot X = sl * 10X
+  const actualLoss = lot * sl * 10;
+  const actualRiskPct = (actualLoss / balance * 100).toFixed(1);
+
+  document.getElementById('lotValue').textContent = lot.toFixed(2);
+
+  let riskColor = 'var(--green)';
+  if (risk >= 8) riskColor = 'var(--red)';
+  else if (risk >= 5) riskColor = 'var(--gold)';
+
+  document.getElementById('lotRiskInfo').innerHTML =
+    `Risk: <span style="color:${riskColor}">${actualRiskPct}%</span> = <span style="color:${riskColor}">$${actualLoss.toFixed(2)}</span> | Balance: $${balance.toFixed(2)}`;
+
+  const progressPct = Math.min(100, risk / 10 * 100);
+  let progressColor = 'var(--green)';
+  if (risk >= 8) progressColor = 'var(--red)';
+  else if (risk >= 5) progressColor = 'var(--gold)';
+  document.getElementById('riskProgress').style.width = progressPct + '%';
+  document.getElementById('riskProgress').style.background = progressColor;
+}
+
+// ══════════════════════════════════════
+// TRADE DIRECTION & RESULT
+// ══════════════════════════════════════
+function setDir(dir) {
+  state.direction = dir;
+  document.getElementById('btnBuy').classList.toggle('active', dir === 'BUY');
+  document.getElementById('btnSell').classList.toggle('active', dir === 'SELL');
+}
+
+function setResult(r) {
+  state.result = r;
+  document.getElementById('btnProfit').classList.toggle('active', r === 'profit');
+  document.getElementById('btnLoss').classList.toggle('active', r === 'loss');
+}
+
+// ══════════════════════════════════════
+// SAVE TRADE
+// ══════════════════════════════════════
+function saveTrade() {
+  const lot = parseFloat(document.getElementById('tradeLot').value);
+  const pnlRaw = parseFloat(document.getElementById('tradePnL').value);
+  const strategy = document.getElementById('tradeStrategy').value.trim();
+
+  if (!lot || !pnlRaw || !strategy) {
+    showToast('⚠ Lot, miqdor va strategiya kiriting!');
+    return;
+  }
+
+  const pnl = state.result === 'profit' ? Math.abs(pnlRaw) : -Math.abs(pnlRaw);
+  const now = new Date();
+
+  const trade = {
+    id: Date.now(),
+    direction: state.direction,
+    lot,
+    pnl,
+    strategy,
+    note: document.getElementById('tradeNote').value.trim(),
+    date: now.toISOString(),
+    hour: now.getHours()
+  };
+
+  state.trades.unshift(trade);
+
+  // Update balance
+  state.balance = Math.max(0, state.balance + pnl);
+  document.getElementById('balance').value = state.balance || '';
+  document.getElementById('settingsBalance').value = state.balance || '';
+  updateHeaderBalance();
+
+  saveState();
+  checkWarning();
+
+  // Reset form
+  document.getElementById('tradeLot').value = '';
+  document.getElementById('tradePnL').value = '';
+  document.getElementById('tradeStrategy').value = '';
+  document.getElementById('tradeNote').value = '';
+
+  showToast(pnl >= 0 ? '✅ Tred saqlandi — Foyda!' : '📌 Tred saqlandi — Zarar yozildi');
+  showPage('journal');
+}
+
+// ══════════════════════════════════════
+// RENDER JOURNAL
+// ══════════════════════════════════════
+function renderJournal() {
+  const el = document.getElementById('tradeList');
+  if (!state.trades.length) {
+    el.innerHTML = `<div class="empty-state"><div class="e-icon">📋</div><div class="e-title">Tredlar yo'q</div><div class="e-sub">Yangi tred qo'shish uchun<br>"TRED" tugmasini bosing</div></div>`;
+    return;
+  }
+
+  el.innerHTML = state.trades.map((t, i) => {
+    const d = new Date(t.date);
+    const dateStr = d.toLocaleDateString('uz-UZ', {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
+    const isProfit = t.pnl >= 0;
+    return `<div class="trade-item">
+      <div class="trade-badge ${t.direction.toLowerCase()}">${t.direction}</div>
+      <div class="trade-info">
+        <div class="trade-strategy">${t.strategy}</div>
+        <div class="trade-meta">${dateStr} · ${t.lot} lot${t.note ? ' · ' + t.note : ''}</div>
+      </div>
+      <div class="trade-pnl ${isProfit ? 'profit' : 'loss'}">${isProfit ? '+' : ''}$${Math.abs(t.pnl).toFixed(2)}</div>
+      <button class="trade-delete" onclick="deleteTrade(${t.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteTrade(id) {
+  if (!confirm('Bu tredni o\'chirmoqchimisiz?')) return;
+  const t = state.trades.find(x => x.id === id);
+  if (t) {
+    state.balance = Math.max(0, state.balance - t.pnl);
+    updateHeaderBalance();
+    document.getElementById('balance').value = state.balance || '';
+    document.getElementById('settingsBalance').value = state.balance || '';
+  }
+  state.trades = state.trades.filter(x => x.id !== id);
+  saveState();
+  checkWarning();
+  renderJournal();
+  showToast('Tred o\'chirildi');
+}
+
+// ══════════════════════════════════════
+// CHECK 3 LOSS WARNING
+// ══════════════════════════════════════
+function checkWarning() {
+  const recent = state.trades.slice(0, 3);
+  const threeConsecLoss = recent.length === 3 && recent.every(t => t.pnl < 0);
+  const banner = document.getElementById('warningBanner');
+  if (threeConsecLoss) {
+    banner.classList.add('show');
+    // Try notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('⚠ GOD MODE — To\'xtatish!', {
+        body: '3 ta ketma-ket zarar. Bugun savdoni to\'xtating!',
+        icon: ''
+      });
+    }
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// ══════════════════════════════════════
+// RENDER STATS
+// ══════════════════════════════════════
+function renderStats() {
+  const trades = state.trades;
+  if (!trades.length) {
+    document.getElementById('statGrid').innerHTML = `<div style="grid-column:1/-1;" class="empty-state"><div class="e-icon">📊</div><div class="e-title">Ma'lumot yo'q</div><div class="e-sub">Tredlar yozilgach statistika chiqadi</div></div>`;
+    document.getElementById('streakRow').innerHTML = '';
+    document.getElementById('forecastBlock').innerHTML = '<div style="color:var(--text3);font-size:11px;">Tred yozilgach prognoz chiqadi</div>';
+    document.getElementById('strategyBlock').innerHTML = '<div style="color:var(--text3);font-size:11px;">Tred yozilgach ko\'rsatiladi</div>';
+    document.getElementById('aiAdvice').textContent = 'Tredlar yozilgach tavsiya chiqadi...';
+    document.getElementById('heatmapGrid').innerHTML = '';
+    return;
+  }
+
+  const wins = trades.filter(t => t.pnl > 0);
+  const losses = trades.filter(t => t.pnl < 0);
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+  const winRate = (wins.length / trades.length * 100).toFixed(0);
+  const avgWin = wins.length ? wins.reduce((s,t) => s+t.pnl, 0) / wins.length : 0;
+  const avgLoss = losses.length ? Math.abs(losses.reduce((s,t) => s+t.pnl, 0) / losses.length) : 0;
+  const rr = avgLoss ? (avgWin / avgLoss).toFixed(2) : '∞';
+
+  // Best day
+  const dayMap = {};
+  trades.forEach(t => {
+    const d = new Date(t.date).toLocaleDateString('uz-UZ',{weekday:'short'});
+    dayMap[d] = (dayMap[d] || 0) + t.pnl;
+  });
+  const bestDay = Object.entries(dayMap).sort((a,b) => b[1]-a[1])[0];
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="s-label">Win Rate</div>
+      <div class="s-value ${winRate>=50?'green':'red'}">${winRate}%</div>
+      <div class="s-sub">${wins.length}W / ${losses.length}L</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">Jami P&L</div>
+      <div class="s-value ${totalPnl>=0?'green':'red'}">${totalPnl>=0?'+':''}$${totalPnl.toFixed(2)}</div>
+      <div class="s-sub">${trades.length} tred</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">Risk/Reward</div>
+      <div class="s-value gold">${rr}</div>
+      <div class="s-sub">Avg RR</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">Eng yaxshi kun</div>
+      <div class="s-value green">${bestDay ? bestDay[0] : '—'}</div>
+      <div class="s-sub">${bestDay ? '$'+bestDay[1].toFixed(2) : ''}</div>
+    </div>
+  `;
+
+  // Streak
+  const last10 = trades.slice(0, 10);
+  document.getElementById('streakRow').innerHTML = last10.map(t =>
+    `<div class="streak-dot ${t.pnl>=0?'win':'loss'}">${t.pnl>=0?'W':'L'}</div>`
+  ).join('') + Array(Math.max(0,10-last10.length)).fill('<div class="streak-dot empty">·</div>').join('');
+
+  // Forecast
+  const dailyAvg = calcDailyAvg(trades);
+  const m1 = dailyAvg * 22;
+  const m6 = dailyAvg * 132;
+  const y1 = dailyAvg * 264;
+  document.getElementById('forecastBlock').innerHTML = [
+    {label:'1 Oy', val:m1, days:22},
+    {label:'6 Oy', val:m6, days:132},
+    {label:'1 Yil', val:y1, days:264}
+  ].map(f => `
+    <div class="forecast-row">
+      <div class="forecast-period">${f.label} (${f.days} ish kuni)</div>
+      <div>
+        <div class="forecast-val" style="color:${f.val>=0?'var(--green)':'var(--red)'};text-align:right">${f.val>=0?'+':''}$${Math.abs(f.val).toFixed(0)}</div>
+        <div class="forecast-pct" style="text-align:right">${state.balance ? (f.val/state.balance*100).toFixed(1)+'% ROI' : ''}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Heatmap
+  const hourMap = {};
+  trades.forEach(t => {
+    const h = t.hour;
+    if (!hourMap[h]) hourMap[h] = {pnl:0, cnt:0};
+    hourMap[h].pnl += t.pnl;
+    hourMap[h].cnt++;
+  });
+  const hours = [0,2,4,6,8,10,12,14,16,18,20,22,1,3,5,7,9,11,13,15,17,19,21,23];
+  document.getElementById('heatmapGrid').innerHTML = hours.map(h => {
+    const d = hourMap[h];
+    if (!d) return `<div class="heat-cell" title="${h}:00">${h}</div>`;
+    const isPos = d.pnl >= 0;
+    const bg = isPos ? 'var(--green-dim)' : 'var(--red-dim)';
+    const border = isPos ? 'rgba(46,204,138,0.4)' : 'rgba(224,85,85,0.4)';
+    return `<div class="heat-cell" style="background:${bg};border:1px solid ${border};color:${isPos?'var(--green)':'var(--red)'}" title="${h}:00 — $${d.pnl.toFixed(2)}">${h}</div>`;
+  }).join('');
+
+  // Strategies
+  const stratMap = {};
+  trades.forEach(t => {
+    const s = t.strategy || 'Nomsiz';
+    if (!stratMap[s]) stratMap[s] = {wins:0, total:0, pnl:0};
+    stratMap[s].total++;
+    stratMap[s].pnl += t.pnl;
+    if (t.pnl > 0) stratMap[s].wins++;
+  });
+  document.getElementById('strategyBlock').innerHTML = Object.entries(stratMap)
+    .sort((a,b) => b[1].pnl - a[1].pnl)
+    .map(([name, d]) => {
+      const wr = (d.wins/d.total*100).toFixed(0);
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:12px;color:var(--text);font-weight:700;">${name}</div>
+          <div style="font-size:13px;font-family:var(--font-display);font-weight:800;color:${d.pnl>=0?'var(--green)':'var(--red)'}">${d.pnl>=0?'+':''}$${d.pnl.toFixed(2)}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <div style="font-size:10px;color:var(--text3)">${d.total} tred · WR: ${wr}%</div>
+          <div style="font-size:10px;color:${wr>=50?'var(--green)':'var(--red)'}">${wr>=50?'✓ Samarali':'✗ Tekshiring'}</div>
+        </div>
+        <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" style="width:${wr}%;background:${wr>=50?'var(--green)':'var(--red)'};"></div></div>
+      </div>`;
+    }).join('') || '<div style="color:var(--text3);font-size:11px;">Tredlar yo\'q</div>';
+
+  // AI Advice
+  generateAdvice(trades, winRate, rr, dailyAvg);
+}
+
+function calcDailyAvg(trades) {
+  if (!trades.length) return 0;
+  // Group by date
+  const dates = {};
+  trades.forEach(t => {
+    const d = new Date(t.date).toDateString();
+    dates[d] = (dates[d] || 0) + t.pnl;
+  });
+  const days = Object.values(dates);
+  return days.reduce((s,v) => s+v, 0) / days.length;
+}
+
+function generateAdvice(trades, winRate, rr, dailyAvg) {
+  const el = document.getElementById('aiAdvice');
+  const losses = trades.filter(t => t.pnl < 0);
+  const wins = trades.filter(t => t.pnl > 0);
+  const totalPnl = trades.reduce((s,t) => s+t.pnl, 0);
+
+  // Consecutive loss check
+  let consec = 0;
+  for (const t of trades) {
+    if (t.pnl < 0) consec++;
+    else break;
+  }
+
+  let advice = [];
+
+  if (consec >= 3) {
+    advice.push(`⛔ <strong>Bugun savdoni to'xtating!</strong> Ketma-ket ${consec} ta zarar — bu psixologiya muammosi belgisi.`);
+  }
+
+  if (winRate >= 60) {
+    advice.push(`✅ <strong>Win rate ${winRate}%</strong> — zo'r! Strategiyangiz samarali ishlayapti.`);
+  } else if (winRate >= 50) {
+    advice.push(`📊 <strong>Win rate ${winRate}%</strong> — yaxshi, lekin yaxshilash mumkin. Entry nuqtalarini kuchaytiring.`);
+  } else {
+    advice.push(`⚠️ <strong>Win rate ${winRate}%</strong> — past. Strategiyangizni qayta ko'rib chiqing yoki lot kamaytiring.`);
+  }
+
+  if (parseFloat(rr) >= 1.5) {
+    advice.push(`💎 <strong>RR: ${rr}</strong> — mukammal risk/reward nisbati. Shu yo'lda davom eting.`);
+  } else if (parseFloat(rr) >= 1) {
+    advice.push(`📌 <strong>RR: ${rr}</strong> — qabul qilinarli. Take profit ni SL dan 1.5x katta qilib ko'ring.`);
+  } else {
+    advice.push(`⚠️ <strong>RR: ${rr}</strong> — xavfli. Take profit manzilingizni oshiring.`);
+  }
+
+  if (dailyAvg > 0) {
+    advice.push(`📈 Kunlik o'rtacha: <strong>$${dailyAvg.toFixed(2)}</strong>. Bu sur'atda 1 oyda ~$${(dailyAvg*22).toFixed(0)} kutilmoqda.`);
+  }
+
+  // Day analysis
+  const dayPnl = {};
+  trades.forEach(t => {
+    const d = new Date(t.date).toLocaleDateString('uz-UZ',{weekday:'long'});
+    dayPnl[d] = (dayPnl[d]||0)+t.pnl;
+  });
+  const sortedDays = Object.entries(dayPnl).sort((a,b)=>b[1]-a[1]);
+  if (sortedDays.length >= 2) {
+    advice.push(`🗓 Eng samarali kuningiz: <strong>${sortedDays[0][0]}</strong>. Eng zaif: <strong>${sortedDays[sortedDays.length-1][0]}</strong>.`);
+  }
+
+  el.innerHTML = advice.join('<br><br>');
+}
+
+// ══════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════
+function exportData() {
+  const data = JSON.stringify({balance: state.balance, trades: state.trades}, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'godmode_trades.json'; a.click();
+  showToast('Ma\'lumotlar yuklab olindi');
+}
+
+function confirmReset() {
+  if (confirm('BARCHA tredlarni o\'chirmoqchimisiz? Bu qaytarib bo\'lmaydi!')) {
+    state.trades = [];
+    saveState();
+    checkWarning();
+    renderJournal();
+    renderStats();
+    showToast('Barcha tredlar o\'chirildi');
+  }
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════
+if ('Notification' in window && Notification.permission === 'default') {
+  setTimeout(() => {
+    Notification.requestPermission();
+  }, 3000);
+}
+
+// ══════════════════════════════════════
+// PWA SERVICE WORKER (inline)
+// ══════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'godmode-v1';
+    self.addEventListener('install', e => {
+      self.skipWaiting();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).catch(() => new Response('')))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], {type:'text/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+</script>
+</body>
+</html>
